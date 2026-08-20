@@ -1,5 +1,5 @@
+import asyncio
 import os
-import time
 import logging
 
 # Prevent transformers from importing TensorFlow (avoids Keras 3 compatibility crash)
@@ -35,13 +35,13 @@ def get_index():
     vector_store = QdrantVectorStore(
         client=qdrant_client,
         collection_name="finrag_assistant_v2",
-        enable_hybrid=False,
-        fastembed_sparse_model=None,
+        enable_hybrid=True,                          # Dense + sparse BM25 fusion
+        fastembed_sparse_model="Qdrant/bm25",        # Requires: pip install fastembed
     )
     return VectorStoreIndex.from_vector_store(vector_store=vector_store)
 
 
-def retrieve_financial_context(query: str) -> str:
+async def retrieve_financial_context(query: str) -> str:
     """Retrieve the top 5 most relevant financial document chunks for a given query.
 
     Uses a token-optimized top_k=5 to prevent context bloat while fully leveraging
@@ -70,7 +70,7 @@ def retrieve_financial_context(query: str) -> str:
                     f"Hugging Face API cold start or timeout detected (attempt {attempt}/{max_attempts}). "
                     f"Waiting 20 seconds before retrying... Error: {e}"
                 )
-                time.sleep(20)
+                await asyncio.sleep(20)
             else:
                 logger.error(f"All {max_attempts} retrieval attempts failed. Raising final exception.")
                 raise last_exception

@@ -7,3 +7,4 @@ llama-index-vector-stores-qdrant
 llama-index-embeddings-huggingface-api
 langgraph
 langchain-groq
+fastembed  # Required for hybrid BM25 sparse search (QdrantVectorStore enable_hybrid=True)
