@@ -45,7 +45,7 @@ function TypingIndicator() {
         <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse-dot" style={{ animationDelay: '0s' }} />
         <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse-dot" style={{ animationDelay: '0.2s' }} />
         <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse-dot" style={{ animationDelay: '0.4s' }} />
-        <span className="ml-2 text-sm text-slate-500 dark:text-slate-400">Analyzing...</span>
+        <span className="ml-2 text-sm text-slate-500 dark:text-slate-400">Retrieving &amp; Analyzing...</span>
       </div>
     </div>
   );
@@ -263,6 +263,8 @@ export default function App() {
         // Save full title up to 100 chars, let CSS `truncate` handle the display
         const title = newMessages[0].content.slice(0, 100);
         updated.unshift({ id: newId, title, messages: newMessages });
+        // Cap at 20 sessions to prevent localStorage quota exhaustion
+        if (updated.length > 20) updated = updated.slice(0, 20);
         setCurrentSessionId(newId);
         currentSessionIdRef.current = newId; // Update ref immediately
       } else {
@@ -303,10 +305,11 @@ export default function App() {
       content: msg.content,
     }));
 
-    const userMsg = { role: 'user', content: trimmed };
+    const userMsg = { id: generateId(), role: 'user', content: trimmed };
     const tempMessages = [...messages, userMsg];
     updateCurrentSession(tempMessages);
     setInput('');
+    if (inputRef.current) inputRef.current.style.height = 'auto'; // Reset auto-resize
     setIsLoading(true);
 
     try {
@@ -314,10 +317,11 @@ export default function App() {
         query: trimmed,
         chat_history: chatHistory 
       });
-      const aiMsg = { role: 'ai', content: data.response };
+      const aiMsg = { id: generateId(), role: 'ai', content: data.response };
       updateCurrentSession([...tempMessages, aiMsg]);
     } catch (err) {
       const errorMsg = {
+        id: generateId(),
         role: 'ai',
         content: '⚠️ **Connection error.** Please make sure the FastAPI backend is running and try again.',
       };
@@ -445,7 +449,7 @@ export default function App() {
             </button>
             <span className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-surface-800/60 px-2.5 py-1 rounded-full border border-slate-200 dark:border-white/[0.04]">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-              Llama 3.3
+              GPT-OSS 120B
             </span>
           </div>
         </header>
@@ -458,7 +462,7 @@ export default function App() {
             ) : (
               <div className="flex flex-col gap-6">
                 {messages.map((msg, i) => (
-                  <ChatBubble key={i} role={msg.role} content={msg.content} />
+                  <ChatBubble key={msg.id || i} role={msg.role} content={msg.content} />
                 ))}
                 {isLoading && <TypingIndicator />}
                 <div ref={messagesEndRef} />
@@ -476,7 +480,12 @@ export default function App() {
                 ref={inputRef}
                 rows={1}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  // Auto-resize: expand up to max-h-32 (128px), then scroll
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
+                }}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about financial reports..."
                 disabled={isLoading}
@@ -492,7 +501,7 @@ export default function App() {
               </button>
             </div>
             <p className="text-center text-[0.7rem] text-slate-500 dark:text-slate-600 mt-2.5">
-              FinRAG uses Llama 3.3 70B via Groq · Retrieval from Qdrant Cloud · Responses may contain inaccuracies
+              FinRAG uses GPT-OSS 120B via Groq · Hybrid Retrieval from Qdrant Cloud · Responses may contain inaccuracies
             </p>
           </div>
         </footer>
