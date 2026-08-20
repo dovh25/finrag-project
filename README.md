@@ -155,18 +155,4 @@ npm run dev
 
 ---
 
-## 🔄 Recent Changes (refactor/backend)
-
-| Area | Change |
-|------|--------|
-| **Async Pipeline** | `retrieve_financial_context` converted to `async def`; `time.sleep` → `asyncio.sleep` |
-| **Async Nodes** | `retrieve_node` and `generate_node` are now `async def` with `await llm.ainvoke()` |
-| **Self-Reflective Grader** | New `retrieval_grader_node` scores context relevance via LLM JSON output |
-| **Conditional Routing** | `route_after_grading` directs flow to generate, retry, or fallback based on grade + retry budget |
-| **Sliding Window Memory** | `chat_history` capped at last K=4 messages to prevent token overflow |
-| **Hybrid Search** | Qdrant switched to `enable_hybrid=True` with `fastembed` BM25 sparse model |
-| **Fallback Node** | `fallback_node` returns a structured user-friendly error after max retries |
-
----
-
 **Developed for technical demonstration and portfolio showcasing.**
