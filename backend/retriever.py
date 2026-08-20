@@ -61,7 +61,7 @@ async def retrieve_financial_context(query: str) -> str:
     for attempt in range(1, max_attempts + 1):
         try:
             logger.info(f"Retrieval attempt {attempt}/{max_attempts} for query: '{query[:60]}...'")
-            nodes = retriever.retrieve(query)
+            nodes = await retriever.aretrieve(query)
             break  # Success — exit the retry loop
         except Exception as e:
             last_exception = e
