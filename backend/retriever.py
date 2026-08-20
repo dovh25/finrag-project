@@ -13,7 +13,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-from qdrant_client import QdrantClient
+from qdrant_client import AsyncQdrantClient, QdrantClient
 from llama_index.core import Settings, VectorStoreIndex
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from llama_index.embeddings.huggingface_api import HuggingFaceInferenceAPIEmbedding
@@ -25,15 +25,25 @@ def get_index():
         token=os.getenv("HF_TOKEN")
     )
 
-    # Connect to Qdrant Cloud
+    qdrant_url = os.getenv("QDRANT_URL")
+    qdrant_api_key = os.getenv("QDRANT_API_KEY")
+
+    # Sync client — used by QdrantVectorStore for index/collection management
     qdrant_client = QdrantClient(
-        url=os.getenv("QDRANT_URL"),
-        api_key=os.getenv("QDRANT_API_KEY"),
+        url=qdrant_url,
+        api_key=qdrant_api_key,
     )
 
-    # Initialize the vector store and index
+    # Async client — required by QdrantVectorStore.aretrieve() inside FastAPI's event loop
+    qdrant_aclient = AsyncQdrantClient(
+        url=qdrant_url,
+        api_key=qdrant_api_key,
+    )
+
+    # Initialize the vector store with BOTH clients for sync + async support
     vector_store = QdrantVectorStore(
         client=qdrant_client,
+        aclient=qdrant_aclient,                      # Required for await aretrieve()
         collection_name="finrag_assistant_v2",
         enable_hybrid=True,                          # Dense + sparse BM25 fusion
         fastembed_sparse_model="Qdrant/bm25",        # Requires: pip install fastembed
