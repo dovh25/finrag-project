@@ -45,7 +45,7 @@ The system currently hosts the complete annual reports of the following major co
 | **Fault-Tolerant Retrieval** | A 3-attempt retry loop with `asyncio.sleep(20)` gracefully handles HuggingFace Inference API cold starts (504 timeouts) without blocking the server. |
 | **Sliding Window Memory (K=4)** | Only the last 4 messages from `chat_history` are injected into the prompt, keeping token consumption bounded and deterministic across long conversations. |
 | **Interactive Citations** | Automatically extracts and renders source document names as beautiful, hoverable UI badges to prevent AI hallucinations. |
-| **Rapid AI Inference** | Powered by **Llama-3.3-70B-Versatile** via **Groq's** ultra-fast inference API, with fully async `.ainvoke()` calls. |
+| **Rapid AI Inference** | Powered by **GPT-OSS 120B** (`openai/gpt-oss-120b`) via **Groq's** ultra-fast inference API, with fully async `.ainvoke()` calls. |
 | **Memory-Optimized Deployment** | HuggingFace Inference API eliminates local PyTorch overhead, running within 512MB RAM constraints on Render's free tier. |
 | **Sleek ChatGPT-Style UI** | Modern frontend built with **React** and **Tailwind CSS**, featuring a collapsible sidebar, dark mode, and rich markdown rendering. |
 
@@ -72,7 +72,7 @@ graph TD
     Retriever -->|Hybrid Query\nDense + BM25 Sparse| Qdrant[(Qdrant Vector DB)]
     Qdrant -->|Top-5 Fused Results| Retriever
 
-    Generator -->|Sliding Window\nChat History K=4| Groq[Groq API: Llama-3.3-70b]
+    Generator -->|Sliding Window\nChat History K=4| Groq[Groq API: GPT-OSS-120B]
     Groq -->|Answer + Citations| Generator
 
     Generator -->|Final Response| API
@@ -85,7 +85,7 @@ graph TD
 2. **Query Processing**: The user submits a natural language question. The React UI bundles the current query along with previous chat session context (`chat_history`).
 3. **Hybrid Retrieval**: `retrieve_node` (async) embeds the query and performs **hybrid search** (dense + BM25 sparse fusion) on Qdrant, fetching the top **5** most relevant document chunks. A 3-attempt async retry loop handles HuggingFace API cold starts transparently.
 4. **Retrieval Grading**: `retrieval_grader_node` (async) uses the LLM to score whether the retrieved context is relevant (`yes`/`no`). If `no`, it retries retrieval once, then falls back gracefully after exhausting the retry budget.
-5. **Generation**: The graded context and sliding-window chat history (last K=4 messages) are passed to `generate_node`. Llama-3.3-70B acts as a Senior Analyst, strictly citing sources as `[Source: Filename.pdf]`.
+5. **Generation**: The graded context and sliding-window chat history (last K=4 messages) are passed to `generate_node`. GPT-OSS 120B (`openai/gpt-oss-120b`) acts as a Senior Analyst, strictly citing sources as `[Source: Filename.pdf]`.
 6. **Response & UI Parsing**: The final AI response is returned to the frontend. A custom Markdown parser converts citation badges into interactive, hoverable UI elements.
 
 ---
@@ -101,7 +101,7 @@ graph TD
 | **Vector DB** | Qdrant Cloud | Hybrid search (dense + BM25 sparse) over document embeddings. |
 | **Embeddings** | HuggingFace Inference API (`BAAI/bge-m3`) | Serverless dense text embedding generation. |
 | **Sparse Search** | `fastembed` (`Qdrant/bm25`) | Local BM25 tokenization for sparse vector generation. |
-| **LLM Provider** | Groq API (`llama-3.3-70b-versatile`) | Lightning-fast async inference for grading and generation. |
+| **LLM Provider** | Groq API (`openai/gpt-oss-120b`) | Lightning-fast async inference for grading and generation. |
 
 ---
 
